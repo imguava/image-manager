@@ -43,15 +43,16 @@ services:
       timeout: 20s
       retries: 3
 
-  # 后端服务
+  # Python后端服务
   server:
     build:
-      context: ./server
+      context: ./python_server
       dockerfile: Dockerfile
     container_name: image-manager-server
     environment:
-      NODE_ENV: production
-      PORT: 3001
+      DEBUG: "False"
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: 3001
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: image_manager
@@ -61,8 +62,11 @@ services:
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin123
-      MINIO_USE_SSL: false
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      MINIO_USE_SSL: "False"
+      SECRET_KEY: your-super-secret-jwt-key-change-in-production
+      ACCESS_TOKEN_EXPIRE_MINUTES: 10080
+      CORS_ORIGINS: '["http://localhost", "http://localhost:3000"]'
+      USE_AI_DESCRIPTION: "False"
     ports:
       - "3001:3001"
     networks:
@@ -74,7 +78,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
