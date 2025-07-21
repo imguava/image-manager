@@ -6,6 +6,7 @@
 - Docker Compose 2.0+
 - 至少 2GB 可用内存
 - 至少 5GB 可用磁盘空间
+- 如启用AI功能，建议至少4GB内存和NVIDIA GPU
 
 ## 🚀 快速启动
 
@@ -42,6 +43,7 @@ docker-compose logs -f
 
 - **前端应用**: http://localhost
 - **后端API**: http://localhost:3001
+- **API文档**: http://localhost:3001/docs
 - **MinIO控制台**: http://localhost:9001 (minioadmin/minioadmin123)
 
 ## 🔑 默认登录信息
@@ -58,7 +60,7 @@ docker-compose logs -f
          │
          ▼
 ┌─────────────────┐    ┌─────────────────┐
-│ Node.js (3001)  │────│   Express API   │
+│ FastAPI (3001)  │────│   Python API    │
 └─────────────────┘    └─────────────────┘
          │                       │
          ▼                       ▼
@@ -66,6 +68,34 @@ docker-compose logs -f
 │PostgreSQL(5432) │    │  MinIO (9000)   │
 │   数据库存储     │    │   文件存储      │
 └─────────────────┘    └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Janus-Pro-7B   │
+│   AI模型(可选)   │
+└─────────────────┘
+```
+
+## 🤖 AI图片描述功能
+
+系统支持使用Janus-Pro-7B模型自动生成图片描述。默认情况下此功能是关闭的。
+
+### 启用AI功能
+修改`docker-compose.yml`中的环境变量：
+```yaml
+environment:
+  USE_AI_DESCRIPTION: "True"
+  AI_MODEL_PATH: "/app/models/Janus-Pro-7B"
+  AI_PROMPT: "请描述这张图片的内容，使用简洁的关键词"
+  AI_TEMPERATURE: "0.1"
+  AI_TOP_P: "0.95"
+```
+
+### 使用自定义模型
+如果您有自己的Janus-Pro-7B模型，可以通过卷挂载方式使用：
+```yaml
+volumes:
+  - /path/to/your/model:/app/models/Janus-Pro-7B
 ```
 
 ## 🛠️ 常用命令
@@ -119,6 +149,7 @@ docker-compose up --build -d
 - **数据库配置**: PostgreSQL连接信息
 - **存储配置**: MinIO对象存储配置
 - **JWT配置**: 认证密钥配置
+- **AI配置**: Janus-Pro-7B模型配置
 
 ### 端口配置
 - **80**: 前端应用端口
@@ -130,6 +161,7 @@ docker-compose up --build -d
 ### 数据持久化
 - **postgres_data**: PostgreSQL数据卷
 - **minio_data**: MinIO数据卷
+- **ai_model_data**: AI模型数据卷
 
 ## 🐛 故障排除
 
@@ -142,6 +174,7 @@ ports:
 
 ### 内存不足
 如果系统内存不足，可以减少服务资源限制或关闭不必要的服务。
+特别是AI功能需要较大内存，如果不需要可以关闭。
 
 ### 数据库连接失败
 检查PostgreSQL服务是否正常启动：
@@ -153,6 +186,12 @@ docker-compose logs postgres
 检查MinIO服务是否正常启动：
 ```bash
 docker-compose logs minio
+```
+
+### AI模型加载失败
+检查AI模型路径和权限：
+```bash
+docker-compose logs server
 ```
 
 ## 🔒 生产环境部署
@@ -184,6 +223,10 @@ docker-compose logs minio
 2. **数据库优化**:
    - 配置连接池
    - 优化查询索引
+
+3. **AI模型优化**:
+   - 使用量化版本的模型减少内存占用
+   - 配置适当的生成参数
 
 ## 📝 备份与恢复
 
