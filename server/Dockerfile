@@ -1,32 +1,38 @@
-# 使用官方Node.js运行时作为基础镜像
-FROM node:18-alpine
+FROM python:3.10-slim
 
-# 设置工作目录
 WORKDIR /app
 
-# 复制package.json和package-lock.json
-COPY package*.json ./
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# 安装依赖
-RUN npm ci --only=production
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-# 复制应用代码
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
 COPY . .
 
-# 创建非root用户
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+# Create non-root user
+RUN addgroup --system app && adduser --system --group app
 
-# 更改文件所有权
-RUN chown -R nodejs:nodejs /app
-USER nodejs
+# Create directories for uploads
+RUN mkdir -p uploads/originals uploads/thumbnails && chown -R app:app uploads
 
-# 暴露端口
+# Switch to non-root user
+USER app
+
+# Expose port
 EXPOSE 3001
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3001/health || exit 1
 
-# 启动应用
-CMD ["npm", "start"]
+# Run application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "3001"]
