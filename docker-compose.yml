@@ -46,7 +46,7 @@ services:
   # Python后端服务
   server:
     build:
-      context: ./python_server
+      context: ./server
       dockerfile: Dockerfile
     container_name: image-manager-server
     environment:
@@ -67,6 +67,9 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 10080
       CORS_ORIGINS: '["http://localhost", "http://localhost:3000"]'
       USE_AI_DESCRIPTION: "False"
+      # AI_MODEL_PATH: "/app/models/Janus-Pro-7B"  # Uncomment to use AI description
+    volumes:
+      - ai_model_data:/app/models  # Volume for AI model data
     ports:
       - "3001:3001"
     networks:
@@ -106,6 +109,8 @@ volumes:
   postgres_data:
     driver: local
   minio_data:
+    driver: local
+  ai_model_data:  # New volume for AI model data
     driver: local
 
 networks:

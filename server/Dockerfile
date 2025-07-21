@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -21,8 +22,15 @@ COPY . .
 # Create non-root user
 RUN addgroup --system app && adduser --system --group app
 
-# Create directories for uploads
-RUN mkdir -p uploads/originals uploads/thumbnails && chown -R app:app uploads
+# Create directories for uploads and model cache
+RUN mkdir -p uploads/originals uploads/thumbnails && \
+    mkdir -p /app/models && \
+    chown -R app:app uploads && \
+    chown -R app:app /app/models
+
+# Set environment variables for model cache
+ENV TRANSFORMERS_CACHE=/app/models
+ENV HF_HOME=/app/models
 
 # Switch to non-root user
 USER app
